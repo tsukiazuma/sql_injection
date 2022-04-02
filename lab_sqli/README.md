@@ -1,7 +1,12 @@
 ### Người thực hiện: Trần Ngọc Nam
 ### Thời gian thực hiện: 30/03/2022
 
-# Cách làm:
+# Mục lục:
+1. [Cách làm](#1)
+2. [Lỗi sai](#2)
+3. [Cách khắc phục](#3)
+
+## Cách làm:<a name="1"></a>
 - Check xem web có bị lỗi sql injection không? SQL có 2 dạng để check: dựa trên số(?id=1) hoặc dạng chuỗi(string). Nhưng dựa theo cấu trúc web nên ta chọn check theo id.
   - Đầu tiên, ta thử chèn dấu ' vào http://192.168.216.129/cat.php?id=1
   ```php
@@ -92,3 +97,47 @@
 - Đây là thông tin về admin, giờ chúng ta thử đăng nhập. Nhưng không thành công, có thể suy đoán mật khẩu đã được mã hóa.
 - Ta sẽ thử giải nén mật khẩu. Và sau khi thử các cách giải mã: DES, 3DES, AES, SHA, MD5,.. thì password nhận được là P4ssw0rd.
 - Đến đây ta đã có thông tin username: admin, password: P4ssw0rd. Và bây giờ ta đã có thể đăng nhập thành công và tùy ý thêm và xóa các bức tranh.
+
+## Lỗi sai:<a name="2"></a>
+- Các liên kết trên thanh menu có dang ?id= nên dễ xảy ra lỗi SQL Injection
+  ```php
+    Các liên kết như:
+    test: <a href="cat.php?id=1">test | </a>
+    ruxcon: <a href="cat.php?id=2">test | </a>
+    20120: <a href="cat.php?id=3">test | </a>
+  ```
+- Lúc gửi giữ liệu sẽ có dạng:
+  ```php
+    SELECT title, description, body FROM cat WHERE ID = 1
+  ```
+- Kẻ tấn công sẽ chèn đoạn query vào url để lấy được thông tin mong muốn
+- Ví dụ:
+  ```php
+    http://192.168.216.129/cat.php?id=1 union select 1,2,3,4
+    -> SELECT * FROM cat WHERE id=1 UNION SELECT 1,2,3,4 LIMIT 1
+
+    http://192.168.216.129/cat.php?id=1 union select 1,column_name,3,4 from information_schema.columns where table_name='users'
+    -> SELECT * FROM cat WHERE id=1 UNION SELECT 1, column_name,3,4 from information_schema.tables where table_name='users' LIMIT 1
+  ```
+- Tài liệu tham khảo: https://sechow.com/bricks/docs/content-page-1.html
+
+## Cách khắc phục:<a name="3"></a>
+- Hầu hết các trường hợp sql injection có thể được ngăn chặn bằng cách sử dụng các truy vấn tham số (còn được gọi là tuyên bố đã chuẩn bị) thay vì ghép chuỗi trong truy vấn.
+- Có thể thử mã hóa dữ liệu bởi vì Bất kể ngôn ngữ bạn đang sử dụng là gì, các phương pháp mã hóa bạn sử dụng phải đồng bộ với các nguyên tắc mã hóa Bảo mật của OWASP. Hầu hết các nền tảng phát triển web đều cung cấp các cơ chế để tránh tất cả SQL Injjection.
+- Luôn sử dụng các chức năng thoát ký tự cho đầu vào do người dùng cung cấp được cung cấp bởi mỗi hệ thống quản lý cơ sở dữ liệu (DBMS).
+  Ví dụ: sử dụng mysql_real_escape_string() trong PHP để tránh các ký tự có thể dẫn đến lệnh SQL ngoài ý muốn
+  ```php
+    $db_connection = mysqli_connect("localhost", "user", "password", "db");
+		$username = mysqli_real_escape_string($db_connection, $_POST['username']);
+		$password = mysqli_real_escape_string($db_connection, $_POST['password']);
+		$query = "SELECT * FROM users WHERE username = '" . $username. "' AND password = '" . $password . "'"; 
+  ```
+- Sử dụng câu truy vấn tham số
+  ```php
+    String id = request.getParameter("id");
+    String query = "SELECT * FROM cat WHERE id = ? ";
+    PreparedStatement statement = connection.prepareStatement(query);
+    statement.setString(1, id);
+    ResultSet resultSet = statement.executeQuery();
+  ```
+- Tài liệu tham khảo: https://portswigger.net/web-security/sql-injection#how-to-prevent-sql-injection
